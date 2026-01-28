@@ -1,10 +1,10 @@
 [Desktop Entry]
-Name=DeskGPT Fork
+Name=DeskGPT
 Exec=deskgpt %U
 TryExec=deskgpt
 Terminal=false
 Type=Application
 Icon=deskgpt
 StartupWMClass=deskgpt
-Comment=Optimized DeskGPT fork for OpenAI ChatGPT.
+Comment=Optimized DeskGPT for OpenAI ChatGPT.
 Categories=Utility;

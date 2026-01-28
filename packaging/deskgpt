@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Local launcher for the DeskGPT source tree.
+# Uses the script location to resolve the repository root.
+script_path="$(readlink -f "${BASH_SOURCE[0]}")"
+repo_root="$(cd "$(dirname "$script_path")/.." && pwd)"
+packaged_bin="${repo_root}/dist/linux-unpacked/deskgpt"
+
+if [[ -x "$packaged_bin" ]]; then
+  exec "$packaged_bin" "$@"
+fi
+
+if [[ -f "${repo_root}/package.json" ]]; then
+  exec npm --prefix "$repo_root" start -- "$@"
+fi
+
+echo "DeskGPT not runnable from ${repo_root}. Run npm install and npm run pack." >&2
+exit 1

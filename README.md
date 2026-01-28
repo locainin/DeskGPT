@@ -22,10 +22,30 @@ DeskGPT offers a seamless desktop experience for OpenAI's ChatGPT. Whether you'r
 - Fixed icon resolution in packaged builds by including image assets in the build.
 - Updated Electron and build tooling and addressed dependency vulnerabilities.
 - Added Linux-focused tuning support via `deskgpt-flags.conf` for Wayland and rendering flags.
+- Added a Linux launcher script for native app menu integration.
 
 ## Installation
 
 ### For Linux
+
+**From Source (Development)**:
+
+1. Clone the repository:
+`git clone https://github.com/locainin/DeskGPT.git`
+2. Move into the repo:
+`cd DeskGPT`
+3. Install dependencies:
+`npm install`
+4. Run in development mode:
+`npm start`
+5. Install the local launcher and desktop entry:
+`./scripts/install-local-launcher.sh`
+
+**Packaged (Local Build)**:
+
+1. Build the binary:
+`npm run pack`
+2. Run the packaged binary from `dist/linux-unpacked/deskgpt`.
 
 **AppImage**:
 
@@ -55,6 +75,11 @@ We welcome contributions! If you find a bug or have a feature request, please op
 ## License
 
 This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for details.
+
+## Linux Integration
+
+- Local launcher: `./scripts/install-local-launcher.sh` installs the menu entry and launcher.
+- Optional flags config: add Chromium/Electron flags to `~/.config/deskgpt/deskgpt-flags.conf` (one per line).
 
 ## Acknowledgments
 
