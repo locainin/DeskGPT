@@ -5,7 +5,7 @@
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --check src/main.js",
     "pack": "electron-builder --dir",
     "dist": "electron-builder"
   },
@@ -25,7 +25,10 @@
     "name": "Iman Reihanian",
     "email": "ireihani@uci.edu"
   },
-  "license": "ISC",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "license": "GPL-3.0-only",
   "build": {
     "appId": "com.iman.deskgpt",
     "mac": {
@@ -67,12 +70,12 @@
       "icon": "img/robot-icon.png"
     },
     "files": [
-      "src/main.js"
+      "src/**",
+      "img/**"
     ]
   },
   "devDependencies": {
-    "electron": "^26.1.0",
-    "electron-builder": "^22.14.13",
-    "electron-packager": "^17.1.2"
+    "electron": "^40.0.0",
+    "electron-builder": "^26.4.0"
   }
 }

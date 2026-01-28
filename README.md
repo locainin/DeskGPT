@@ -11,6 +11,18 @@ DeskGPT offers a seamless desktop experience for OpenAI's ChatGPT. Whether you'r
 - **Optimized UI**: A user interface designed for readability and efficiency.
 - **Cross-Platform**: Available for Linux (AppImage & .deb), Windows, and MacOS.
 
+## Fork Improvements
+
+- Updated default endpoint to chatgpt.com with an environment override for alternate domains.
+- Added navigation allowlisting so external links open in the system browser instead of spawning extra windows.
+- Enforced single-instance behavior by default to avoid duplicate renderer processes.
+- Disabled the built-in spellchecker to reduce background CPU during typing.
+- Injected reduced-motion styles to minimize animation overhead during streaming output.
+- Removed the application menu and enabled auto-hide to reduce startup work.
+- Fixed icon resolution in packaged builds by including image assets in the build.
+- Updated Electron and build tooling and addressed dependency vulnerabilities.
+- Added Linux-focused tuning support via `deskgpt-flags.conf` for Wayland and rendering flags.
+
 ## Installation
 
 ### For Linux
