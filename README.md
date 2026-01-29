@@ -41,6 +41,13 @@ DeskGPT offers a seamless desktop experience for OpenAI's ChatGPT. Whether you'r
 5. Install the local launcher and desktop entry:
 `./scripts/install-local-launcher.sh`
 
+**Arch Linux (local PKGBUILD)**:
+
+1. Install using paru (local PKGBUILD):
+`paru -U .`
+2. Or build manually with makepkg:
+`makepkg -si`
+
 **Packaged (Local Build)**:
 
 1. Build the binary:
@@ -80,6 +87,7 @@ This project is licensed under the GNU General Public License v3.0. See the [LIC
 
 - Local launcher: `./scripts/install-local-launcher.sh` installs the menu entry and launcher.
 - Optional flags config: add Chromium/Electron flags to `~/.config/deskgpt/deskgpt-flags.conf` (one per line).
+- On Electron 38+ running in a Wayland session, Wayland is the default backend; add `--ozone-platform=x11` in the flags file only if Xwayland fallback is required.
 
 ## Acknowledgments
 
