@@ -1,31 +1,47 @@
 pkgname=deskgpt
-pkgver=0.0.0
+pkgver=97b2d0d
 pkgrel=1
 pkgdesc="Desktop client for OpenAI ChatGPT"
 arch=('x86_64')
 url="https://github.com/locainin/DeskGPT"
 license=('GPL3')
-depends=('electron>=40' 'gtk3' 'nss' 'libxss' 'libxcomposite' 'libxdamage' 'libxrandr' 'libxkbcommon' 'libdrm' 'mesa' 'libx11' 'libxcb' 'libxfixes' 'libxi' 'libxext' 'libxrender')
-makedepends=('git')
-source=("deskgpt::git+file://${startdir}")
-sha256sums=('SKIP')
+# Depends on runtime system libraries used by the bundled Electron build.
+depends=('gtk3' 'nss' 'libxss' 'libxcomposite' 'libxdamage' 'libxrandr' 'libxkbcommon' 'libdrm' 'mesa' 'libx11' 'libxcb' 'libxfixes' 'libxi' 'libxext' 'libxrender' 'alsa-lib')
+# Uses Node.js to build the bundled Linux output.
+makedepends=('git' 'nodejs')
+# Builds from the working tree to avoid makepkg cloning into the repository.
+source=()
+sha256sums=()
 
 pkgver() {
-  cd "${srcdir}/deskgpt"
+  cd "${startdir}"
   git describe --long --tags --always | sed 's/^v//;s/-/./g'
 }
 
+build() {
+  cd "${startdir}"
+
+  # Ensures dependencies are installed from the lockfile for consistent builds.
+  npm ci --prefer-offline --no-audit --progress=false
+  # Generates the unpacked Linux build used for packaging.
+  npm run pack
+}
+
 package() {
+  local build_dir="${startdir}/dist/linux-unpacked"
+  if [[ ! -d "$build_dir" ]]; then
+    printf '%s\n' "Expected build output not found: $build_dir" >&2
+    return 1
+  fi
+
   install -d "${pkgdir}/usr/lib/deskgpt"
-  cp -r "${srcdir}/deskgpt/src" "${pkgdir}/usr/lib/deskgpt/"
-  cp -r "${srcdir}/deskgpt/img" "${pkgdir}/usr/lib/deskgpt/"
-  install -m 644 "${srcdir}/deskgpt/package.json" "${pkgdir}/usr/lib/deskgpt/"
+  cp -a "${build_dir}/." "${pkgdir}/usr/lib/deskgpt/"
 
   install -d "${pkgdir}/usr/bin"
   cat > "${pkgdir}/usr/bin/deskgpt" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-exec electron /usr/lib/deskgpt "$@"
+exec /usr/lib/deskgpt/deskgpt "$@"
 EOF
   chmod 755 "${pkgdir}/usr/bin/deskgpt"
 
