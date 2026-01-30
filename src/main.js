@@ -246,11 +246,3 @@ app.on('activate', () => {
     createWindow()
   }
 })
-
-app.on('browser-window-created', (event, window) => {
-  // Suppress beforeunload prompts so window close is not blocked by the page.
-  window.webContents.on('will-prevent-unload', (event) => {
-    // This will prevent the unload and the user will not be prompted to leave the page.
-    event.preventDefault()
-  })
-})
