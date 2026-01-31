@@ -16,12 +16,17 @@ const allowMultipleInstances = process.env.DESKGPT_ALLOW_MULTIPLE_INSTANCES === 
 const allowMultipleWindows = process.env.DESKGPT_ALLOW_MULTIPLE_WINDOWS === '1'
 const disableStyleOptimizations =
   process.env.DESKGPT_DISABLE_STYLE_OPTIMIZATIONS === '1'
-const configRoot =
+const userConfigRoot =
   process.env.XDG_CONFIG_HOME ||
   (process.env.HOME ? path.join(process.env.HOME, '.config') : null)
-const flagsConfigPath = configRoot
-  ? path.join(configRoot, 'deskgpt', 'deskgpt-flags.conf')
-  : null
+const flagsConfigCandidates = []
+if (userConfigRoot) {
+  flagsConfigCandidates.push(
+    path.join(userConfigRoot, 'deskgpt', 'deskgpt-flags.conf')
+  )
+}
+// Falls back to the system-wide config when per-user config is unavailable.
+flagsConfigCandidates.push('/etc/xdg/deskgpt/deskgpt-flags.conf')
 
 const reducedMotionCss = `
 *,
@@ -110,7 +115,10 @@ function focusMainWindow() {
 }
 
 function applyCommandLineFlags() {
-  if (!flagsConfigPath || !fs.existsSync(flagsConfigPath)) {
+  const flagsConfigPath = flagsConfigCandidates.find((candidate) =>
+    fs.existsSync(candidate)
+  )
+  if (!flagsConfigPath) {
     return
   }
 

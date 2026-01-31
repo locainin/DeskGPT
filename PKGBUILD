@@ -1,5 +1,5 @@
 pkgname=deskgpt
-pkgver=97b2d0d
+pkgver=7dc0952
 pkgrel=1
 pkgdesc="Desktop client for OpenAI ChatGPT"
 arch=('x86_64')
@@ -46,8 +46,11 @@ EOF
   chmod 755 "${pkgdir}/usr/bin/deskgpt"
 
   install -d "${pkgdir}/usr/share/applications"
-  install -m 644 "${srcdir}/deskgpt/packaging/deskgpt.desktop" "${pkgdir}/usr/share/applications/deskgpt.desktop"
+  install -m 644 "${startdir}/packaging/deskgpt.desktop" "${pkgdir}/usr/share/applications/deskgpt.desktop"
 
   install -d "${pkgdir}/usr/share/icons/hicolor/256x256/apps"
-  install -m 644 "${srcdir}/deskgpt/img/robot-icon.png" "${pkgdir}/usr/share/icons/hicolor/256x256/apps/deskgpt.png"
+  install -m 644 "${startdir}/img/robot-icon.png" "${pkgdir}/usr/share/icons/hicolor/256x256/apps/deskgpt.png"
+
+  install -d "${pkgdir}/etc/xdg/deskgpt"
+  install -m 644 "${startdir}/packaging/deskgpt-flags.conf" "${pkgdir}/etc/xdg/deskgpt/deskgpt-flags.conf"
 }
