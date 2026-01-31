@@ -67,6 +67,7 @@ if (isLinux && !disableGpuTuning) {
   app.commandLine.appendSwitch('ignore-gpu-blocklist')
   app.commandLine.appendSwitch('enable-gpu-rasterization')
   app.commandLine.appendSwitch('disable-software-rasterizer')
+  app.commandLine.appendSwitch('disable-features', 'Vulkan')
 }
 
 /**

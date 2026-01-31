@@ -65,7 +65,7 @@ find_mesa_card() {
 
 run_with_mesa() {
   local card
-  local icd_path
+  local icd_path=""
   local icd_candidates
   if [[ -r "$mesa_vendor_file" ]] && card="$(find_mesa_card)"; then
     export __EGL_VENDOR_LIBRARY_FILENAMES="$mesa_vendor_file"
