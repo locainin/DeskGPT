@@ -62,6 +62,7 @@ let mainWindow
 const disableGpuTuning = process.env.DESKGPT_DISABLE_GPU_TWEAKS === '1'
 const allowSoftwareRendering =
   process.env.DESKGPT_ALLOW_SOFTWARE_RENDERING === '1'
+const suppressGpuDialog = process.env.DESKGPT_SUPPRESS_GPU_DIALOG === '1'
 if (isLinux && !disableGpuTuning) {
   app.commandLine.appendSwitch('ignore-gpu-blocklist')
   app.commandLine.appendSwitch('enable-gpu-rasterization')
@@ -196,7 +197,9 @@ async function logGpuStatus() {
       `Failures: ${failures.join(', ')}\n` +
       (outPath ? `Log: ${outPath}\n\n` : '') +
       'Set DESKGPT_ALLOW_SOFTWARE_RENDERING=1 to override this check.'
-    dialog.showErrorBox('DeskGPT GPU Acceleration Required', message)
+    if (!suppressGpuDialog) {
+      dialog.showErrorBox('DeskGPT GPU Acceleration Required', message)
+    }
     app.exit(1)
   }
 }

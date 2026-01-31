@@ -42,30 +42,60 @@ package() {
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Forces Mesa EGL on hybrid systems to avoid NVIDIA GBM/EGL init failures on Wayland.
-# Set DESKGPT_FORCE_NVIDIA=1 to bypass and allow NVIDIA EGL selection.
-if [[ -z "${DESKGPT_FORCE_NVIDIA:-}" ]]; then
-  if [[ -d /sys/class/drm ]] && [[ -r /usr/share/glvnd/egl_vendor.d/50_mesa.json ]]; then
-    has_mesa_gpu=0
-    for vendor_path in /sys/class/drm/card*/device/vendor; do
-      [[ -r "$vendor_path" ]] || continue
-      vendor_id="$(<"$vendor_path")"
-      case "$vendor_id" in
-        0x8086|0x1002)
-          has_mesa_gpu=1
-          break
-          ;;
-      esac
-    done
-    if [[ "$has_mesa_gpu" -eq 1 ]]; then
-      export __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json
-      export __GLX_VENDOR_LIBRARY_NAME=mesa
-      export DRI_PRIME=0
+DESKGPT_BIN="/usr/lib/deskgpt/deskgpt"
+
+mesa_vendor_file="/usr/share/glvnd/egl_vendor.d/50_mesa.json"
+mesa_vendor_id_regex='^(0x8086|0x1002)$'
+
+find_mesa_card() {
+  local vendor_path vendor_id card
+  for vendor_path in /sys/class/drm/card*/device/vendor; do
+    [[ -r "$vendor_path" ]] || continue
+    vendor_id="$(<"$vendor_path")"
+    if [[ "$vendor_id" =~ $mesa_vendor_id_regex ]]; then
+      card="$(basename "$(dirname "$vendor_path")")"
+      printf '%s\n' "$card"
+      return 0
+    fi
+  done
+  return 1
+}
+
+run_with_mesa() {
+  local card
+  if [[ -r "$mesa_vendor_file" ]] && card="$(find_mesa_card)"; then
+    export __EGL_VENDOR_LIBRARY_FILENAMES="$mesa_vendor_file"
+    export __GLX_VENDOR_LIBRARY_NAME=mesa
+    export DRI_PRIME=0
+    if [[ -e "/dev/dri/$card" ]]; then
+      export WLR_DRM_DEVICES="/dev/dri/$card"
     fi
   fi
+  export DESKGPT_SUPPRESS_GPU_DIALOG=1
+  "$DESKGPT_BIN" "$@"
+}
+
+run_with_prime() {
+  if ! command -v prime-run >/dev/null 2>&1; then
+    printf '%s\n' "prime-run not available; cannot retry with NVIDIA." >&2
+    return 1
+  fi
+  exec prime-run "$DESKGPT_BIN" "$@"
+}
+
+start_epoch="$(date +%s)"
+if run_with_mesa "$@"; then
+  exit 0
 fi
 
-exec /usr/lib/deskgpt/deskgpt "$@"
+status="$?"
+elapsed="$(( $(date +%s) - start_epoch ))"
+if [[ "$status" -eq 1 && "$elapsed" -lt 5 ]]; then
+  run_with_prime "$@"
+  exit $?
+fi
+
+exit "$status"
 EOF
   chmod 755 "${pkgdir}/usr/bin/deskgpt"
 
