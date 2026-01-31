@@ -1,5 +1,5 @@
 pkgname=deskgpt
-pkgver=7dc0952
+pkgver=36d2953
 pkgrel=1
 pkgdesc="Desktop client for OpenAI ChatGPT"
 arch=('x86_64')

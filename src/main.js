@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell } = require('electron')
+const { app, BrowserWindow, Menu, shell, dialog } = require('electron')
 const fs = require('fs')
 const path = require('path')
 
@@ -60,10 +60,13 @@ function getIconPath() {
 let mainWindow
 
 const disableGpuTuning = process.env.DESKGPT_DISABLE_GPU_TWEAKS === '1'
+const allowSoftwareRendering =
+  process.env.DESKGPT_ALLOW_SOFTWARE_RENDERING === '1'
 if (isLinux && !disableGpuTuning) {
   app.commandLine.appendSwitch('use-gl', 'egl')
   app.commandLine.appendSwitch('ignore-gpu-blocklist')
-  app.commandLine.appendSwitch('disable-vulkan')
+  app.commandLine.appendSwitch('enable-gpu-rasterization')
+  app.commandLine.appendSwitch('disable-software-rasterizer')
 }
 
 /**
@@ -153,22 +156,49 @@ function applyCommandLineFlags() {
     })
 }
 
-async function logGpuStatus() {
-  if (!userConfigRoot) {
-    return
+function getGpuFailureReasons(status) {
+  if (!status) {
+    return ['missing_status']
   }
-  const outDir = path.join(userConfigRoot, 'deskgpt')
-  const outPath = path.join(outDir, 'gpu-status.json')
-  try {
-    fs.mkdirSync(outDir, { recursive: true })
-    const status = app.getGPUFeatureStatus()
-    const info = await app.getGPUInfo('basic')
-    fs.writeFileSync(
-      outPath,
-      JSON.stringify({ status, info, at: new Date().toISOString() }, null, 2)
-    )
-  } catch (error) {
-    console.warn('Failed to record GPU status:', error)
+  const requiredKeys = ['gpu_compositing', 'rasterization', 'opengl']
+  return requiredKeys.filter((key) => {
+    const value = status[key]
+    return !value || !String(value).startsWith('enabled')
+  })
+}
+
+async function logGpuStatus() {
+  const status = app.getGPUFeatureStatus()
+  const info = await app.getGPUInfo('basic')
+  const failures = getGpuFailureReasons(status)
+  const outDir = userConfigRoot ? path.join(userConfigRoot, 'deskgpt') : null
+  const outPath = outDir ? path.join(outDir, 'gpu-status.json') : null
+
+  if (outDir && outPath) {
+    try {
+      fs.mkdirSync(outDir, { recursive: true })
+      fs.writeFileSync(
+        outPath,
+        JSON.stringify(
+          { status, info, failures, at: new Date().toISOString() },
+          null,
+          2
+        )
+      )
+    } catch (error) {
+      console.warn('Failed to record GPU status:', error)
+    }
+  }
+
+  // Enforces hardware acceleration unless explicitly overridden.
+  if (!allowSoftwareRendering && failures.length > 0) {
+    const message =
+      'GPU acceleration is unavailable. DeskGPT refuses to run in software mode.\n\n' +
+      `Failures: ${failures.join(', ')}\n` +
+      (outPath ? `Log: ${outPath}\n\n` : '') +
+      'Set DESKGPT_ALLOW_SOFTWARE_RENDERING=1 to override this check.'
+    dialog.showErrorBox('DeskGPT GPU Acceleration Required', message)
+    app.exit(1)
   }
 }
 
