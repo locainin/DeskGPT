@@ -59,6 +59,13 @@ function getIconPath() {
 
 let mainWindow
 
+const disableGpuTuning = process.env.DESKGPT_DISABLE_GPU_TWEAKS === '1'
+if (isLinux && !disableGpuTuning) {
+  app.commandLine.appendSwitch('use-gl', 'egl')
+  app.commandLine.appendSwitch('ignore-gpu-blocklist')
+  app.commandLine.appendSwitch('disable-vulkan')
+}
+
 /**
  * Determines whether a hostname is allowed to stay inside the app window.
  *
@@ -144,6 +151,25 @@ function applyCommandLineFlags() {
         app.commandLine.appendSwitch(flagName)
       }
     })
+}
+
+async function logGpuStatus() {
+  if (!userConfigRoot) {
+    return
+  }
+  const outDir = path.join(userConfigRoot, 'deskgpt')
+  const outPath = path.join(outDir, 'gpu-status.json')
+  try {
+    fs.mkdirSync(outDir, { recursive: true })
+    const status = app.getGPUFeatureStatus()
+    const info = await app.getGPUInfo('basic')
+    fs.writeFileSync(
+      outPath,
+      JSON.stringify({ status, info, at: new Date().toISOString() }, null, 2)
+    )
+  } catch (error) {
+    console.warn('Failed to record GPU status:', error)
+  }
 }
 
 /**
@@ -253,6 +279,7 @@ if (!allowMultipleInstances) {
 app.whenReady().then(() => {
   // Remove the default application menu to reduce startup work and UI overhead.
   Menu.setApplicationMenu(null)
+  logGpuStatus().catch(() => {})
   createWindow()
 })
 
