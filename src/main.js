@@ -63,7 +63,6 @@ const disableGpuTuning = process.env.DESKGPT_DISABLE_GPU_TWEAKS === '1'
 const allowSoftwareRendering =
   process.env.DESKGPT_ALLOW_SOFTWARE_RENDERING === '1'
 if (isLinux && !disableGpuTuning) {
-  app.commandLine.appendSwitch('use-gl', 'egl')
   app.commandLine.appendSwitch('ignore-gpu-blocklist')
   app.commandLine.appendSwitch('enable-gpu-rasterization')
   app.commandLine.appendSwitch('disable-software-rasterizer')

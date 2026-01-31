@@ -41,6 +41,30 @@ package() {
   cat > "${pkgdir}/usr/bin/deskgpt" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
+
+# Forces Mesa EGL on hybrid systems to avoid NVIDIA GBM/EGL init failures on Wayland.
+# Set DESKGPT_FORCE_NVIDIA=1 to bypass and allow NVIDIA EGL selection.
+if [[ -z "${DESKGPT_FORCE_NVIDIA:-}" ]]; then
+  if [[ -d /sys/class/drm ]] && [[ -r /usr/share/glvnd/egl_vendor.d/50_mesa.json ]]; then
+    has_mesa_gpu=0
+    for vendor_path in /sys/class/drm/card*/device/vendor; do
+      [[ -r "$vendor_path" ]] || continue
+      vendor_id="$(<"$vendor_path")"
+      case "$vendor_id" in
+        0x8086|0x1002)
+          has_mesa_gpu=1
+          break
+          ;;
+      esac
+    done
+    if [[ "$has_mesa_gpu" -eq 1 ]]; then
+      export __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json
+      export __GLX_VENDOR_LIBRARY_NAME=mesa
+      export DRI_PRIME=0
+    fi
+  fi
+fi
+
 exec /usr/lib/deskgpt/deskgpt "$@"
 EOF
   chmod 755 "${pkgdir}/usr/bin/deskgpt"
