@@ -201,6 +201,21 @@ function createWindow() {
     }
   })
 
+  // Keeps reload shortcuts working even when the web app registers unload handlers.
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if ((input.control || input.meta) && !input.alt && input.key) {
+      const key = input.key.toLowerCase()
+      if (key === 'r') {
+        event.preventDefault()
+        if (input.shift) {
+          mainWindow.webContents.reloadIgnoringCache()
+        } else {
+          mainWindow.webContents.reload()
+        }
+      }
+    }
+  })
+
   if (!disableStyleOptimizations) {
     mainWindow.webContents.on('dom-ready', () => {
       mainWindow.webContents
