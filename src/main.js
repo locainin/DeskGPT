@@ -16,6 +16,7 @@ const allowMultipleInstances = process.env.DESKGPT_ALLOW_MULTIPLE_INSTANCES === 
 const allowMultipleWindows = process.env.DESKGPT_ALLOW_MULTIPLE_WINDOWS === '1'
 const disableStyleOptimizations =
   process.env.DESKGPT_DISABLE_STYLE_OPTIMIZATIONS === '1'
+const skipFlagsConfig = process.env.DESKGPT_SKIP_FLAGS === '1'
 const userConfigRoot =
   process.env.XDG_CONFIG_HOME ||
   (process.env.HOME ? path.join(process.env.HOME, '.config') : null)
@@ -126,6 +127,9 @@ function focusMainWindow() {
 }
 
 function applyCommandLineFlags() {
+  if (skipFlagsConfig) {
+    return
+  }
   const flagsConfigPath = flagsConfigCandidates.find((candidate) =>
     fs.existsSync(candidate)
   )

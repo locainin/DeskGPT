@@ -46,8 +46,9 @@ DESKGPT_BIN="/usr/lib/deskgpt/deskgpt"
 
 mesa_vendor_file="/usr/share/glvnd/egl_vendor.d/50_mesa.json"
 mesa_vendor_id_regex='^(0x8086|0x1002)$'
-mesa_icd_glob="/usr/share/vulkan/icd.d/*intel*icd*.json"
-mesa_icd_fallback="/usr/share/vulkan/icd.d/*radeon*icd*.json"
+mesa_icd_primary="/usr/share/vulkan/icd.d/intel_icd.x86_64.json"
+mesa_icd_secondary="/usr/share/vulkan/icd.d/intel_hasvk_icd.x86_64.json"
+mesa_icd_fallback="/usr/share/vulkan/icd.d/*radeon*icd*.x86_64.json"
 
 find_mesa_card() {
   local vendor_path vendor_id card
@@ -70,23 +71,62 @@ run_with_mesa() {
   if [[ -r "$mesa_vendor_file" ]] && card="$(find_mesa_card)"; then
     export __EGL_VENDOR_LIBRARY_FILENAMES="$mesa_vendor_file"
     export __GLX_VENDOR_LIBRARY_NAME=mesa
-    export DRI_PRIME=0
     if [[ -e "/dev/dri/$card" ]]; then
       export WLR_DRM_DEVICES="/dev/dri/$card"
+      export AQ_DRM_DEVICES="/dev/dri/$card"
     fi
   fi
-  mapfile -t icd_candidates < <(compgen -G "$mesa_icd_glob")
-  if [[ ${#icd_candidates[@]} -eq 0 ]]; then
+  if [[ -r "$mesa_icd_primary" ]]; then
+    icd_path="$mesa_icd_primary"
+  elif [[ -r "$mesa_icd_secondary" ]]; then
+    icd_path="$mesa_icd_secondary"
+  else
     mapfile -t icd_candidates < <(compgen -G "$mesa_icd_fallback")
-  fi
-  if [[ ${#icd_candidates[@]} -gt 0 ]]; then
-    icd_path="${icd_candidates[0]}"
+    if [[ ${#icd_candidates[@]} -gt 0 ]]; then
+      icd_path="${icd_candidates[0]}"
+    fi
   fi
   if [[ -n "$icd_path" ]]; then
     export VK_ICD_FILENAMES="$icd_path"
   fi
+  export VK_LOADER_LAYERS_DISABLE="VK_LAYER_NV_optimus,VK_LAYER_NV_present,VK_LAYER_MESA_device_select,VK_LAYER_MESA_anti_lag"
+  export NODEVICE_SELECT=1
+  export ELECTRON_OZONE_PLATFORM_HINT=x11
   export DESKGPT_SUPPRESS_GPU_DIALOG=1
-  "$DESKGPT_BIN" "$@"
+  "$DESKGPT_BIN" --ozone-platform=x11 "$@"
+}
+
+run_with_mesa_x11() {
+  local card
+  local icd_path=""
+  local icd_candidates
+  if [[ -r "$mesa_vendor_file" ]] && card="$(find_mesa_card)"; then
+    export __EGL_VENDOR_LIBRARY_FILENAMES="$mesa_vendor_file"
+    export __GLX_VENDOR_LIBRARY_NAME=mesa
+    if [[ -e "/dev/dri/$card" ]]; then
+      export WLR_DRM_DEVICES="/dev/dri/$card"
+      export AQ_DRM_DEVICES="/dev/dri/$card"
+    fi
+  fi
+  if [[ -r "$mesa_icd_primary" ]]; then
+    icd_path="$mesa_icd_primary"
+  elif [[ -r "$mesa_icd_secondary" ]]; then
+    icd_path="$mesa_icd_secondary"
+  else
+    mapfile -t icd_candidates < <(compgen -G "$mesa_icd_fallback")
+    if [[ ${#icd_candidates[@]} -gt 0 ]]; then
+      icd_path="${icd_candidates[0]}"
+    fi
+  fi
+  if [[ -n "$icd_path" ]]; then
+    export VK_ICD_FILENAMES="$icd_path"
+  fi
+  export VK_LOADER_LAYERS_DISABLE="VK_LAYER_NV_optimus,VK_LAYER_NV_present,VK_LAYER_MESA_device_select,VK_LAYER_MESA_anti_lag"
+  export NODEVICE_SELECT=1
+  export ELECTRON_OZONE_PLATFORM_HINT=x11
+  export DESKGPT_SUPPRESS_GPU_DIALOG=1
+  export DESKGPT_SKIP_FLAGS=1
+  "$DESKGPT_BIN" --ozone-platform=x11 --disable-features=Vulkan "$@"
 }
 
 run_with_prime() {
@@ -105,6 +145,9 @@ fi
 status="$?"
 elapsed="$(( $(date +%s) - start_epoch ))"
 if [[ "$status" -eq 1 && "$elapsed" -lt 5 ]]; then
+  if run_with_mesa_x11 "$@"; then
+    exit 0
+  fi
   run_with_prime "$@"
   exit $?
 fi
